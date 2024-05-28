@@ -21,8 +21,8 @@ jobs:
           # echo '. $HOME/.cargo/env' >> ~/.bashrc
           # . "$HOME/.cargo/env"
         run: |
-          export LATEST_APP=$(wget -qO- https://api.github.com/repos/Calcium-Ion/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')
-          git clone -b $LATEST_APP https://github.com/Calcium-Ion/new-api
+          export LATEST_APP=$(wget -qO- https://api.github.com/repos/linux-do/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')
+          git clone -b $LATEST_APP https://github.com/linux-do/new-api
           cd new-api/web
           cp package.json package.json.bak && jq '.resolutions = {"rollup": "npm:@rollup/wasm-node"} | .overrides = {"rollup": "npm:@rollup/wasm-node"}' package.json.bak > package.json
           npm install
@@ -41,7 +41,7 @@ jobs:
 
     - name: Generate release tag
       id: tag
-      run: echo "release_tag=$(wget -qO- https://api.github.com/repos/Calcium-Ion/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')" >> $GITHUB_OUTPUT
+      run: echo "release_tag=$(wget -qO- https://api.github.com/repos/linux-do/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')" >> $GITHUB_OUTPUT
 
     - name: Create release
       uses: softprops/action-gh-release@v1
