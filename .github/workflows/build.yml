@@ -24,7 +24,6 @@ jobs:
           export LATEST_APP=$(wget -qO- https://api.github.com/repos/linux-do/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')
           git clone -b $LATEST_APP https://github.com/linux-do/new-api
           cd new-api/web
-          cp package.json package.json.bak && jq '.resolutions = {"rollup": "npm:@rollup/wasm-node"} | .overrides = {"rollup": "npm:@rollup/wasm-node"}' package.json.bak > package.json
           npm install
           git describe --tags > VERSION
           DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat VERSION) npm run build
