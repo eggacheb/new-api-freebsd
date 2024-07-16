@@ -3,13 +3,12 @@ name: Build new-api
 on: workflow_dispatch
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     name: Build new-api
     steps:
     - uses: actions/checkout@v4
-
-    - name: Set up FreeBSD environment
+    - name: Build new-api
       uses: vmactions/freebsd-vm@v1
       with:
         usesh: true
@@ -18,65 +17,31 @@ jobs:
           pkg install -y jq node20 npm-node20 wget curl git gcc bash gawk gsed
           wget https://dl.google.com/go/go1.22.0.freebsd-amd64.tar.gz && tar -C /usr/local -xzf go1.22.0.freebsd-amd64.tar.gz && rm go1.22.0.freebsd-amd64.tar.gz
           ln -s /usr/local/go/bin/go /usr/local/bin/go
+          # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          # echo '. $HOME/.cargo/env' >> ~/.bashrc
+          # . "$HOME/.cargo/env"
         run: |
-          # Step 1: Fetch the latest tag from the GitHub API
           export LATEST_APP=$(wget -qO- https://api.github.com/repos/linux-do/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')
-          echo "Latest App Version: $LATEST_APP"
-
-          # Step 2: Clone the repository with the latest tag
           git clone -b $LATEST_APP https://github.com/linux-do/new-api
           cd new-api/web
-
-          # Step 3: Backup package.json and modify it
-          cp package.json package.json.bak
-          jq '.resolutions = {"rollup": "npm:@rollup/wasm-node"} | .overrides = {"rollup": "npm:@rollup/wasm-node"}' package.json.bak > package.json
-
-          # Step 4: Install npm dependencies
+          cp package.json package.json.bak && jq '.resolutions = {"rollup": "npm:@rollup/wasm-node"} | .overrides = {"rollup": "npm:@rollup/wasm-node"}' package.json.bak > package.json
           npm install
-
-          # Step 5: Verify if node_modules directory exists
-          if [ ! -d "node_modules" ]; then
-            echo "npm install failed: node_modules directory not found."
-            exit 1
-          fi
-
-          # Step 6: Build the project
           git describe --tags > VERSION
           DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat VERSION) npm run build
-
-          # Step 7: Verify if the build was successful
-          if [ ! -d "dist" ]; then
-            echo "npm run build failed: dist directory not found."
-            exit 1
-          fi
-
           cd ..
-          # Step 8: Download Go modules
           go mod download
-
-          # Step 9: Build the Go project
           go build -ldflags "-s -w -X 'one-api/common.Version=$(git describe --tags)' -extldflags '-static'" -o new-api
-
-          # Step 10: Verify if the Go build was successful
-          if [ ! -f "new-api" ]; then
-            echo "Go build failed: new-api binary not found."
-            exit 1
-          fi
-
-          # Step 11: Print success message
-          echo "Build and setup completed successfully."
-
+          
     - name: Upload artifact
       uses: actions/upload-artifact@main
       with:
         name: new-api-freebsd
-        path: new-api/new-api
+        path: |
+            new-api/new-api
 
     - name: Generate release tag
       id: tag
-      run: |
-        release_tag=$(wget -qO- https://api.github.com/repos/linux-do/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')
-        echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
+      run: echo "release_tag=$(wget -qO- https://api.github.com/repos/linux-do/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')" >> $GITHUB_OUTPUT
 
     - name: Create release
       uses: softprops/action-gh-release@v1
@@ -84,8 +49,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
       with:
         tag_name: ${{ steps.tag.outputs.release_tag }}
-        files: new-api/new-api
-
+        files: |
+              new-api/new-api
+              
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@v2
       with:
