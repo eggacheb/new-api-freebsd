@@ -14,13 +14,12 @@ jobs:
         usesh: true
         release: 13.2
         prepare: |
-          pkg install -y jq wget curl git gcc bash gawk gsed
+          pkg install -y jq node22.4.1 npm-node22.4.1 wget curl git gcc bash gawk gsed
           wget https://dl.google.com/go/go1.22.0.freebsd-amd64.tar.gz && tar -C /usr/local -xzf go1.22.0.freebsd-amd64.tar.gz && rm go1.22.0.freebsd-amd64.tar.gz
           ln -s /usr/local/go/bin/go /usr/local/bin/go
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm install node
+          # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          # echo '. $HOME/.cargo/env' >> ~/.bashrc
+          # . "$HOME/.cargo/env"
         run: |
           export LATEST_APP=$(wget -qO- https://api.github.com/repos/linux-do/new-api/tags | gawk -F '["v]' '/name/{print "v"$5;exit}')
           git clone -b $LATEST_APP https://github.com/linux-do/new-api
